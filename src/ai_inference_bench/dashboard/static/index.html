@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis Bench | AI Inference Optimization & Benchmarking Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0a0d14;
+      --card-bg: rgba(17, 23, 38, 0.8);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --success: #10b981;
+      --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      background: radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+                  radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 30px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: 800; }
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; backdrop-filter: blur(8px); }
+    .stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .stat-val { font-size: 1.6rem; font-weight: 700; margin-top: 4px; }
+    .main-grid { display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 28px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 22px; backdrop-filter: blur(8px); }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .card-title { font-size: 1.1rem; font-weight: 700; }
+    .compare-controls { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: flex-end; margin-bottom: 20px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+    select, button {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    select:focus { border-color: var(--accent); }
+    .btn-primary { background: var(--accent); border: none; font-weight: 600; cursor: pointer; transition: 0.2s; padding: 9px 18px; }
+    .btn-primary:hover { background: #4f46e5; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
+    th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { font-size: 0.72rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.04em; }
+    tbody tr:hover { background: rgba(255, 255, 255, 0.02); cursor: pointer; }
+    code { font-family: var(--font-mono); font-size: 0.8rem; color: #a5b4fc; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
+    .pill.pytorch { background: rgba(238, 76, 44, 0.15); color: #ff6b4a; }
+    .pill.onnx { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+    .pill.int8 { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .modal-card { background: #111726; border: 1px solid var(--border); border-radius: 14px; max-width: 600px; width: 100%; padding: 24px; max-height: 85vh; overflow-y: auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div>
+          <h1 style="font-size: 1.3rem; font-weight: 800;">Aegis Bench</h1>
+          <p style="font-size: 0.75rem; color: var(--muted);">AI Inference Optimization & Benchmarking Lab</p>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="loadRuns()">Refresh Runs</button>
+    </header>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total Benchmarks</div>
+        <div class="stat-val" id="totalRunsVal">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Fastest p50 Latency</div>
+        <div class="stat-val" id="bestLatencyVal" style="color: var(--accent);">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Peak Throughput</div>
+        <div class="stat-val" id="bestThroughputVal" style="color: var(--success);">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Lowest Memory Footprint</div>
+        <div class="stat-val" id="bestMemoryVal">-</div>
+      </div>
+    </div>
+
+    <!-- Comparison Card -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-header">
+        <h2 class="card-title">Run Comparator (Baseline vs Optimized)</h2>
+        <span style="font-size: 0.8rem; color: var(--muted);" id="compareOutcomeBadge">Select two runs to compare</span>
+      </div>
+      <div class="compare-controls">
+        <div class="form-group">
+          <label>Baseline Run (e.g. PyTorch Eager FP32)</label>
+          <select id="baseSelect"></select>
+        </div>
+        <div class="form-group">
+          <label>Target Run (e.g. INT8 / TorchScript / ONNX)</label>
+          <select id="targetSelect"></select>
+        </div>
+        <button class="btn-primary" onclick="executeComparison()">Compare</button>
+      </div>
+      <div style="height: 220px; display: none;" id="chartWrap">
+        <canvas id="comparisonChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Historical Runs Table -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Historical Benchmark Measurements</h2>
+        <span style="font-size: 0.8rem; color: var(--muted);" id="runsCountSpan">0 saved runs</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Run ID</th>
+            <th>Model</th>
+            <th>Backend & Precision</th>
+            <th>Batch</th>
+            <th>Mean Latency</th>
+            <th>p95 Latency</th>
+            <th>Throughput (FPS)</th>
+            <th>Peak RAM</th>
+          </tr>
+        </thead>
+        <tbody id="runsTableBody">
+          <tr><td colspan="8" style="text-align: center; color: var(--muted);">No benchmark runs found in results/</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this) this.style.display='none'">
+    <div class="modal-card" id="modalCard"></div>
+  </div>
+
+  <script>
+    let runsData = [];
+    let compChart = null;
+
+    async function loadRuns() {
+      try {
+        const res = await fetch('/api/runs');
+        runsData = await res.json();
+        renderStats();
+        renderTable();
+        populateSelectors();
+      } catch (e) {
+        console.error('Failed to fetch runs:', e);
+      }
+    }
+
+    function renderStats() {
+      document.getElementById('totalRunsVal').textContent = runsData.length;
+      document.getElementById('runsCountSpan').textContent = `${runsData.length} saved runs`;
+
+      if (runsData.length > 0) {
+        const minLat = Math.min(...runsData.map(r => r.mean_latency_ms));
+        const maxTp = Math.max(...runsData.map(r => r.throughput_fps));
+        const minRam = Math.min(...runsData.map(r => r.peak_ram_mb));
+        document.getElementById('bestLatencyVal').textContent = minLat.toFixed(2) + ' ms';
+        document.getElementById('bestThroughputVal').textContent = maxTp.toFixed(1) + ' fps';
+        document.getElementById('bestMemoryVal').textContent = minRam.toFixed(1) + ' MB';
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('runsTableBody');
+      if (runsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--muted);">No benchmark runs found in results/</td></tr>';
+        return;
+      }
+      tbody.innerHTML = '';
+      runsData.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.onclick = () => showRunModal(r.run_id);
+        const pillClass = r.backend.includes('onnx') ? 'onnx' : (r.precision === 'int8' ? 'int8' : 'pytorch');
+        tr.innerHTML = `
+          <td><code>${r.run_id}</code></td>
+          <td><strong>${r.model_name}</strong></td>
+          <td><span class="pill ${pillClass}">${r.backend} (${r.precision})</span></td>
+          <td>${r.batch_size}</td>
+          <td>${r.mean_latency_ms.toFixed(2)} ms</td>
+          <td>${r.p95_latency_ms.toFixed(2)} ms</td>
+          <td><strong style="color: var(--success);">${r.throughput_fps.toFixed(1)}</strong></td>
+          <td>${r.peak_ram_mb.toFixed(1)} MB</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function populateSelectors() {
+      const bSel = document.getElementById('baseSelect');
+      const tSel = document.getElementById('targetSelect');
+      bSel.innerHTML = '';
+      tSel.innerHTML = '';
+
+      runsData.forEach((r, idx) => {
+        const text = `${r.model_name} | ${r.backend} (${r.precision}) | B=${r.batch_size} [${r.run_id}]`;
+        bSel.innerHTML += `<option value="${r.run_id}" ${idx===0 ? 'selected' : ''}>${text}</option>`;
+        tSel.innerHTML += `<option value="${r.run_id}" ${idx===1 || idx===0 ? 'selected' : ''}>${text}</option>`;
+      });
+    }
+
+    async function executeComparison() {
+      const bId = document.getElementById('baseSelect').value;
+      const tId = document.getElementById('targetSelect').value;
+      if (!bId || !tId) return;
+
+      try {
+        const res = await fetch(`/api/compare?base_id=${bId}&target_id=${tId}`);
+        const comp = await res.json();
+
+        const badge = document.getElementById('compareOutcomeBadge');
+        if (comp.comparable) {
+          badge.innerHTML = `<span style="color: var(--success); font-weight: 700;">Speedup: ${comp.speedup_ratio}x (${comp.latency_reduction_pct}% lower latency, +${comp.throughput_gain_pct}% throughput)</span>`;
+        } else {
+          badge.innerHTML = `<span style="color: #f59e0b;">Warning: ${comp.incomparable_reason}</span>`;
+        }
+
+        renderComparisonChart(comp);
+      } catch (e) {
+        alert('Comparison failed: ' + e);
+      }
+    }
+
+    function renderComparisonChart(comp) {
+      const wrap = document.getElementById('chartWrap');
+      wrap.style.display = 'block';
+      const ctx = document.getElementById('comparisonChart').getContext('2d');
+
+      if (compChart) compChart.destroy();
+
+      compChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Mean Latency (ms)', 'Throughput (FPS)', 'Peak RAM (MB)'],
+          datasets: [
+            {
+              label: `Baseline: ${comp.baseline_backend}`,
+              data: [comp.baseline_latency_mean_ms, comp.baseline_throughput_fps, comp.baseline_ram_mb],
+              backgroundColor: 'rgba(99, 102, 241, 0.6)',
+              borderColor: '#6366f1',
+              borderWidth: 1,
+            },
+            {
+              label: `Target: ${comp.target_backend}`,
+              data: [comp.target_latency_mean_ms, comp.target_throughput_fps, comp.target_ram_mb],
+              backgroundColor: 'rgba(16, 185, 129, 0.6)',
+              borderColor: '#10b981',
+              borderWidth: 1,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#f8fafc' } } },
+          scales: {
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      });
+    }
+
+    async function showRunModal(runId) {
+      try {
+        const res = await fetch(`/api/runs/${runId}`);
+        const r = await res.json();
+        const card = document.getElementById('modalCard');
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3>Run Details: <code>${r.run_id}</code></h3>
+            <button onclick="document.getElementById('modalOverlay').style.display='none'" style="cursor:pointer; background:none; border:none; color:var(--muted); font-size:1.4rem;">&times;</button>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 12px;">Model: <strong>${r.config.model_name}</strong> | Backend: <strong>${r.config.backend} (${r.config.precision})</strong></p>
+          <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.82rem; font-family: var(--font-mono);">
+            <div>p50 (Median): ${r.metrics.latency.median_p50_ms} ms</div>
+            <div>p90 Latency:  ${r.metrics.latency.p90_ms} ms</div>
+            <div>p95 Latency:  ${r.metrics.latency.p95_ms} ms</div>
+            <div>p99 Latency:  ${r.metrics.latency.p99_ms} ms</div>
+            <div>Mean:         ${r.metrics.latency.mean_ms} ms (std: ${r.metrics.latency.std_dev_ms} ms)</div>
+            <div>Min / Max:    ${r.metrics.latency.min_ms} / ${r.metrics.latency.max_ms} ms</div>
+            <div style="margin-top: 6px; color: var(--success);">Throughput:   ${r.metrics.throughput.samples_per_second} samples/sec</div>
+          </div>
+          <p style="font-size: 0.75rem; color: var(--muted);">Hardware: ${r.system_info.cpu_model} (${r.system_info.physical_cores} cores, ${r.system_info.total_ram_gb} GB RAM)</p>
+        `;
+        document.getElementById('modalOverlay').style.display = 'flex';
+      } catch (e) {
+        alert('Failed to load run: ' + e);
+      }
+    }
+
+    loadRuns();
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  inference-bench:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-inference-bench
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./results:/app/results
+    command: ["serve-dashboard", "--port", "8080"]
+    restart: unless-stopped

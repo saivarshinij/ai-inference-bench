@@ -1,0 +1,17 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv
+env
+venv
+.pytest_cache
+.coverage
+htmlcov
+.git
+.gitignore
+results/*.tmp.json
+onnx_models/*.onnx
+.env
+.DS_Store

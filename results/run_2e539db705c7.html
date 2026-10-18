@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Benchmark Report - mlp_classifier (torch_quantized_int8)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0a0d14;
+      --card-bg: #111726;
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #6366f1;
+      --success: #10b981;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 30px;
+      line-height: 1.5;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    .header { margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+    .badge { background: rgba(99, 102, 241, 0.2); color: #818cf8; padding: 4px 10px; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+    .card-title { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); }
+    .card-val { font-size: 1.5rem; font-weight: 700; margin-top: 4px; }
+    .chart-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.88rem; }
+    th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="badge">Inference Benchmark</span>
+      <h1 style="margin-top: 8px;">Model: mlp_classifier</h1>
+      <p style="color: var(--muted); font-size: 0.9rem;">
+        Run ID: <code>run_2e539db705c7</code> | Backend: <strong>torch_quantized_int8 (int8)</strong> | Device: <strong>cpu</strong>
+      </p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="card">
+        <div class="card-title">Mean Latency</div>
+        <div class="card-val" style="color: var(--accent);">0.95 ms</div>
+      </div>
+      <div class="card">
+        <div class="card-title">p95 Latency</div>
+        <div class="card-val">1.43 ms</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Throughput</div>
+        <div class="card-val" style="color: var(--success);">1048.5 fps</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Peak RAM</div>
+        <div class="card-val">201.7 MB</div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <h3>Latency Distribution & Percentiles</h3>
+      <canvas id="latencyChart" height="120"></canvas>
+    </div>
+
+    <div class="card">
+      <h3>System Hardware & Runtime</h3>
+      <table>
+        <tr><th>Property</th><th>Specification</th></tr>
+        <tr><td>CPU Model</td><td>AMD Ryzen 3 7320U with Radeon Graphics</td></tr>
+        <tr><td>Cores</td><td>4 Physical / 8 Logical</td></tr>
+        <tr><td>System RAM</td><td>7.21 GB</td></tr>
+        <tr><td>PyTorch Version</td><td>2.14.1+cpu</td></tr>
+        <tr><td>ONNX Runtime</td><td>1.23.2</td></tr>
+        <tr><td>Hardware Accelerator</td><td>CPU</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const ctx = document.getElementById('latencyChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ["Min", "p50 (Median)", "Mean", "p90", "p95", "p99", "Max"],
+        datasets: [{
+          label: 'Latency (ms)',
+          data: [0.67, 0.894, 0.954, 1.306, 1.43, 2.037, 2.378],
+          borderColor: '#6366f1',
+          backgroundColor: 'rgba(99, 102, 241, 0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 5,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } },
+          x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
